@@ -1,70 +1,120 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
+import {Image, StyleSheet,  TouchableOpacity} from 'react-native';
+import { ThemedText} from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { FlashList } from '@shopify/flash-list';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from "expo-router";
+
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
+  const router = useRouter();
+  const [data, setData] = useState(null);
+  const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        const response = await fetch('https://www.themealdb.com/api/json/v1/1/search.php?f=b');
+        const jsonData = await response.json();
+        setMeals(jsonData.meals);
+      } catch (error) {
+        console.error('Error fetching meals:', error);
+      } finally {
+        setLoading(false); // Ensure loading state is updated regardless of success or failure
+      }
+    };
+    fetchMeals();
+  }, []);
+      const renderItem = ({ item }) => (
+        <TouchableOpacity
+        style={{
+          margin: 10,
+          padding: 10,
+          borderRadius: 8,
+          backgroundColor: '#fff',
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+        }}
+        onPress={() =>  router.push(`/details?id=${item.idMeal}`)} 
+        >
+        
+          <ThemedView style={{ flex: 1, marginRight: 10 }}> 
+          <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>{item.strMeal}</ThemedText>
+          <ThemedText style={{ marginTop: 5, fontStyle: 'italic', color: '#666' }}>
+        {item.strInstructions.length > 50 ? item.strInstructions.slice(0, 100) + '...' : item.strInstructions}
+      </ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
-}
+          <Image source={{ uri: item.strMealThumb }} style={{ width: 100, height: 100, borderRadius: 8, marginLeft: 10 }} />
+         </TouchableOpacity>
+        
+      );
+        return (
+          <ThemedView style={styles.cardContainer}>
+            <FlashList
+              data={meals}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.idMeal}
+              estimatedItemSize={10000000000000}
+              
+            />
+          </ThemedView>
+        );
+      }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    padding: 20,
+  },
+  cardContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    padding: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    backgroundColor: '#fff',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  itemContainer: {
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3, 
+    flex: 1// For Android shadow
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+  },
+  mealName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  detailsContainer: {
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    marginTop: 10,
+    flexGrow: 1, // Allow the details container to grow
+  },
+  ingredientsTitle: {
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  ingredient: {
+    marginLeft: 10,
+  },
+  instructionsTitle: {
+    fontWeight: 'bold',
+    marginTop: 10,
   },
 });
